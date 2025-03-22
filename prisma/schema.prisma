@@ -1,0 +1,85 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String
+  email       String   @unique
+  passwordHash String   @map("password_hash")
+  role        String   @default("user")
+  avatarUrl   String?  @map("avatar_url")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime @default(now()) @map("updated_at") @db.Timestamptz
+
+  @@map("users")
+}
+
+model Category {
+  id            String         @id @default(uuid()) @db.Uuid
+  name          String
+  color         String
+  createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt     DateTime       @default(now()) @map("updated_at") @db.Timestamptz
+  subcategories Subcategory[]
+  books         Book[]
+
+  @@map("categories")
+}
+
+model Subcategory {
+  id                String            @id @default(uuid()) @db.Uuid
+  categoryId        String            @map("category_id") @db.Uuid
+  name              String
+  color             String
+  createdAt         DateTime          @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt         DateTime          @default(now()) @map("updated_at") @db.Timestamptz
+  category          Category          @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  subsubcategories  Subsubcategory[]
+  books             Book[]
+
+  @@index([categoryId])
+  @@map("subcategories")
+}
+
+model Subsubcategory {
+  id            String      @id @default(uuid()) @db.Uuid
+  subcategoryId String      @map("subcategory_id") @db.Uuid
+  name          String
+  color         String
+  createdAt     DateTime    @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt     DateTime    @default(now()) @map("updated_at") @db.Timestamptz
+  subcategory   Subcategory @relation(fields: [subcategoryId], references: [id], onDelete: Cascade)
+  books         Book[]
+
+  @@index([subcategoryId])
+  @@map("subsubcategories")
+}
+
+model Book {
+  id                String          @id @default(uuid()) @db.Uuid
+  title             String
+  author            String
+  categoryId        String          @map("category_id") @db.Uuid
+  subcategoryId     String          @map("subcategory_id") @db.Uuid
+  subsubcategoryId  String          @map("subsubcategory_id") @db.Uuid
+  shelfLocation     String          @map("shelf_location")
+  coverImage        String?         @map("cover_image")
+  createdAt         DateTime        @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt         DateTime        @default(now()) @map("updated_at") @db.Timestamptz
+  category          Category        @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  subcategory       Subcategory     @relation(fields: [subcategoryId], references: [id], onDelete: Cascade)
+  subsubcategory    Subsubcategory  @relation(fields: [subsubcategoryId], references: [id], onDelete: Cascade)
+
+  @@index([categoryId])
+  @@index([subcategoryId])
+  @@index([subsubcategoryId])
+  @@map("books")
+}
+
