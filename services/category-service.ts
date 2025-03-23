@@ -1,6 +1,5 @@
 import { prisma } from "../lib/prisma"
 import { isDatabaseAvailable } from "../lib/db"
-import { initialCategories } from "@/data/categories"
 
 // Obtener todas las categorías con sus subcategorías y sub-subcategorías
 export async function getAllCategories() {
@@ -34,10 +33,11 @@ export async function getAllCategories() {
       }))
     } catch (error) {
       console.error("Error al obtener categorías:", error)
-      return initialCategories
+      throw error // Lanzar el error para que sea manejado por el contexto
     }
   } else {
-    return initialCategories
+    // Cuando la base de datos no está disponible, devolver un array vacío
+    return []
   }
 }
 

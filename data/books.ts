@@ -1,4 +1,4 @@
-import type { Book } from "@/types"
+import type { Book } from "@/types";
 
 export const initialBooks: Book[] = [
   {
@@ -11,16 +11,16 @@ export const initialBooks: Book[] = [
     shelfLocation: "Estante A, Fila 1",
     coverImage: "/placeholder.svg?height=200&width=150",
   },
-  {
-    id: "book-2",
-    title: "Breve historia del tiempo",
-    author: "Stephen Hawking",
-    categoryId: "cat-2",
-    subCategoryId: "subcat-2-1",
-    subSubCategoryId: "subsubcat-2-1-2",
-    shelfLocation: "Estante B, Fila 3",
-    coverImage: "/placeholder.svg?height=200&width=150",
-  },
+  // {
+  //   id: "book-2",
+  //   title: "Breve historia del tiempo",
+  //   author: "Stephen Hawking",
+  //   categoryId: "cat-2",
+  //   subCategoryId: "subcat-2-1",
+  //   subSubCategoryId: "subsubcat-2-1-2",
+  //   shelfLocation: "Estante B, Fila 3",
+  //   coverImage: "/placeholder.svg?height=200&width=150",
+  // },
   {
     id: "book-3",
     title: "El origen de las especies",
@@ -81,5 +81,4 @@ export const initialBooks: Book[] = [
     shelfLocation: "Estante A, Fila 1",
     coverImage: "/placeholder.svg?height=200&width=150",
   },
-]
-
+];
