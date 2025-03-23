@@ -37,5 +37,5 @@ export const isDatabaseAvailable = () => {
     }
   }
 
-  return true;
+  return isAvailable;
 };

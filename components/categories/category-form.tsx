@@ -7,6 +7,7 @@ import { useLibrary } from "@/context/library-context"
 import { Input } from "../ui/input"
 import { Button } from "../ui/button"
 import { Label } from "../ui/label"
+import { postAPI, putAPI } from "@/lib/api"
 
 interface CategoryFormProps {
   type: "category" | "subCategory" | "subSubCategory"
@@ -28,38 +29,72 @@ export function CategoryForm({
   initialData,
   onComplete,
 }: CategoryFormProps) {
-  const { addCategory, updateCategory, addSubCategory, updateSubCategory, addSubSubCategory, updateSubSubCategory } =
-    useLibrary()
+  // Ya no necesitamos extraer estas funciones del contexto
+  const { } = useLibrary()
 
   const [name, setName] = useState(initialData?.name || "")
   const [color, setColor] = useState(initialData?.color || "#000000")
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
     const data = { name, color }
-
-    if (type === "category") {
-      if (categoryId) {
-        updateCategory(categoryId, data)
-      } else {
-        addCategory(data)
+    
+    try {
+      if (type === "category") {
+        if (categoryId) {
+          // Actualizar categoría principal
+          await putAPI("categories", {
+            id: categoryId,
+            ...data
+          })
+        } else {
+          // Crear nueva categoría principal
+          await postAPI("categories", data)
+        }
+      } else if (type === "subCategory" && categoryId) {
+        if (subCategoryId) {
+          // Actualizar subcategoría
+          await putAPI("categories", {
+            id: subCategoryId,
+            type: "subcategory",
+            categoryId,
+            ...data
+          })
+        } else {
+          // Crear nueva subcategoría
+          await postAPI("categories", {
+            type: "subcategory",
+            categoryId,
+            ...data
+          })
+        }
+      } else if (type === "subSubCategory" && categoryId && subCategoryId) {
+        if (subSubCategoryId) {
+          // Actualizar sub-subcategoría
+          await putAPI("categories", {
+            id: subSubCategoryId,
+            type: "subsubcategory",
+            categoryId,
+            subcategoryId: subCategoryId,
+            ...data
+          })
+        } else {
+          // Crear nueva sub-subcategoría
+          await postAPI("categories", {
+            type: "subsubcategory",
+            categoryId,
+            subcategoryId: subCategoryId,
+            ...data
+          })
+        }
       }
-    } else if (type === "subCategory" && categoryId) {
-      if (subCategoryId) {
-        updateSubCategory(categoryId, subCategoryId, data)
-      } else {
-        addSubCategory(categoryId, data)
-      }
-    } else if (type === "subSubCategory" && categoryId && subCategoryId) {
-      if (subSubCategoryId) {
-        updateSubSubCategory(categoryId, subCategoryId, subSubCategoryId, data)
-      } else {
-        addSubSubCategory(categoryId, subCategoryId, data)
-      }
+      
+      onComplete()
+    } catch (error) {
+      console.error("Error al guardar la categoría:", error)
+      // Aquí se podría implementar un manejo de errores más sofisticado
     }
-
-    onComplete()
   }
 
   return (

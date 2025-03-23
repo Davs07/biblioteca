@@ -14,10 +14,11 @@ import { Card, CardContent } from "../ui/card"
 interface BookFormProps {
   book?: Book
   onComplete: () => void
+  onSubmit?: (bookData: Omit<Book, "id">) => Promise<void>
 }
 
-export function BookForm({ book, onComplete }: BookFormProps) {
-  const { categories, addBook, updateBook } = useLibrary()
+export function BookForm({ book, onComplete, onSubmit }: BookFormProps) {
+  const { categories } = useLibrary()
 
   const [title, setTitle] = useState(book?.title || "")
   const [author, setAuthor] = useState(book?.author || "")
@@ -32,7 +33,7 @@ export function BookForm({ book, onComplete }: BookFormProps) {
   const selectedSubCategory = subCategories.find((sc) => sc.id === subCategoryId)
   const subSubCategories = selectedSubCategory?.subSubCategories || []
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
     const bookData = {
@@ -45,10 +46,9 @@ export function BookForm({ book, onComplete }: BookFormProps) {
       coverImage: book?.coverImage || "/placeholder.svg?height=200&width=150",
     }
 
-    if (book) {
-      updateBook(book.id, bookData)
-    } else {
-      addBook(bookData)
+    if (onSubmit) {
+      // Usar la función de envío proporcionada por el contenedor
+      await onSubmit(bookData)
     }
 
     onComplete()

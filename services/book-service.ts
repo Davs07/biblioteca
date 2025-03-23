@@ -1,28 +1,30 @@
-// import { prisma } from "../lib/prisma";/*  */
+import { prisma } from "../lib/prisma";
 import { isDatabaseAvailable } from "../lib/db";
-import { PrismaClient } from "@prisma/client";
 
 // Obtener todos los libros
-const prisma = new PrismaClient();
 export async function getAllBooks() {
-  console.log("Obteniendo libros...", prisma.book.findMany());
-  try {
-    const books = (await prisma?.book.findMany()) ?? [];
+  if (isDatabaseAvailable()) {
+    try {
+      const books = await prisma.book.findMany();
 
-    // Transformar los datos para que coincidan con el formato esperado por la aplicación
-    return books.map((book) => ({
-      id: book.id,
-      title: book.title,
-      author: book.author,
-      categoryId: book.categoryId,
-      subCategoryId: book.subcategoryId,
-      subSubCategoryId: book.subsubcategoryId,
-      shelfLocation: book.shelfLocation,
-      coverImage: book.coverImage || "/placeholder.svg?height=200&width=150",
-    }));
-  } catch (error) {
-    console.error("Error al obtener libros:", error);
-    throw error; // Lanzar el error para que sea manejado por el contexto
+      // Transformar los datos para que coincidan con el formato esperado por la aplicación
+      return books.map((book) => ({
+        id: book.id,
+        title: book.title,
+        author: book.author,
+        categoryId: book.categoryId,
+        subCategoryId: book.subcategoryId,
+        subSubCategoryId: book.subsubcategoryId,
+        shelfLocation: book.shelfLocation,
+        coverImage: book.coverImage || "/placeholder.svg?height=200&width=150",
+      }));
+    } catch (error) {
+      console.error("Error al obtener libros:", error);
+      return []; // Devolver un array vacío en caso de error
+    }
+  } else {
+    // Cuando la base de datos no está disponible, devolver un array vacío
+    return [];
   }
 }
 

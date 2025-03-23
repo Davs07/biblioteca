@@ -9,8 +9,7 @@ import {
 } from "react";
 import type { Book, Category } from "@/types";
 import { isDatabaseAvailable } from "../lib/db";
-import * as CategoryService from "@/services/category-service";
-import * as BookService from "@/services/book-service";
+import { fetchAPI, postAPI, putAPI, deleteAPI } from "@/lib/api";
 
 interface LibraryContextType {
   categories: Category[];
@@ -50,7 +49,7 @@ interface LibraryContextType {
   addBook: (book: Omit<Book, "id">) => void;
   updateBook: (id: string, book: Partial<Book>) => void;
   deleteBook: (id: string) => void;
-  searchBooks: (query: string) => Book[];
+  searchBooks: (query: string) => Promise<Book[]>;
   getCategory: (categoryId: string) => Category | undefined;
   getSubCategory: (
     categoryId: string,
@@ -74,15 +73,13 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
   // Cargar datos iniciales
   useEffect(() => {
     async function loadInitialData() {
-      console.log("hola")
       try {
-        // Cargar categorías desde la base de datos
-        const dbCategories = await CategoryService.getAllCategories();
+        // Cargar categorías desde la API
+        const dbCategories = await fetchAPI<Category[]>("categories");
         setCategories(dbCategories);
 
-        // Cargar libros desde la base de datos
-        const dbBooks = await BookService.getAllBooks();
-        console.log(dbBooks, "hola12")
+        // Cargar libros desde la API
+        const dbBooks = await fetchAPI<Book[]>("books");
         setBooks(dbBooks);
       } catch (error) {
         console.error("Error al cargar datos iniciales:", error);
@@ -100,7 +97,8 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
   const addCategory = async (category: Omit<Category, "id">) => {
     try {
       if (isDatabaseAvailable()) {
-        const newCategory = await CategoryService.createCategory({
+        // Usar la API en lugar del servicio directo
+        const newCategory = await postAPI<Category>("categories", {
           name: category.name,
           color: category.color,
         });
@@ -121,7 +119,9 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
   const updateCategory = async (id: string, category: Partial<Category>) => {
     try {
       if (isDatabaseAvailable()) {
-        await CategoryService.updateCategory(id, {
+        // Usar la API en lugar del servicio directo
+        await putAPI("categories", {
+          id,
           name: category.name,
           color: category.color,
         });
@@ -137,7 +137,8 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
   const deleteCategory = async (id: string) => {
     try {
       if (isDatabaseAvailable()) {
-        await CategoryService.deleteCategory(id);
+        // Usar la API en lugar del servicio directo
+        await deleteAPI("categories", { id });
       }
       setCategories(categories.filter((c) => c.id !== id));
       // También eliminar todos los libros en esta categoría
@@ -153,32 +154,43 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
   ) => {
     try {
       if (isDatabaseAvailable()) {
-        const newSubCategory = await CategoryService.createSubcategory(
+        // Usar la API en lugar del servicio directo
+        const newSubCategory = await postAPI<Category["subCategories"][0]>("categories", {
+          type: "subcategory",
           categoryId,
-          {
-            name: subCategory.name,
-            color: subCategory.color,
-          }
-        );
+          name: subCategory.name,
+          color: subCategory.color,
+        });
+
+        // Actualizar categorías con tipado explícito
         setCategories(
-          categories.map((c) =>
-            c.id === categoryId
-              ? { ...c, subCategories: [...c.subCategories, newSubCategory] }
-              : c
-          )
+          categories.map((c) => {
+            if (c.id === categoryId) {
+              return {
+                ...c,
+                subCategories: [...c.subCategories, newSubCategory] as Category["subCategories"]
+              };
+            }
+            return c;
+          })
         );
       } else {
-        const newSubCategory = {
+        const newSubCategory: Category["subCategories"][0] = {
           ...subCategory,
           id: crypto.randomUUID(),
           subSubCategories: [],
         };
+        
         setCategories(
-          categories.map((c) =>
-            c.id === categoryId
-              ? { ...c, subCategories: [...c.subCategories, newSubCategory] }
-              : c
-          )
+          categories.map((c) => {
+            if (c.id === categoryId) {
+              return {
+                ...c,
+                subCategories: [...c.subCategories, newSubCategory]
+              };
+            }
+            return c;
+          })
         );
       }
     } catch (error) {
@@ -193,7 +205,11 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
   ) => {
     try {
       if (isDatabaseAvailable()) {
-        await CategoryService.updateSubcategory(categoryId, subCategoryId, {
+        // Usar la API en lugar del servicio directo
+        await putAPI("categories", {
+          type: "subcategory",
+          categoryId,
+          id: subCategoryId,
           name: subCategory.name,
           color: subCategory.color,
         });
@@ -221,7 +237,12 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
   ) => {
     try {
       if (isDatabaseAvailable()) {
-        await CategoryService.deleteSubcategory(categoryId, subCategoryId);
+        // Usar la API en lugar del servicio directo
+        await deleteAPI("categories", { 
+          type: "subcategory",
+          categoryId,
+          id: subCategoryId 
+        });
       }
       setCategories(
         categories.map((c) =>
@@ -257,58 +278,65 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
   ) => {
     try {
       if (isDatabaseAvailable()) {
-        const newSubSubCategory = await CategoryService.createSubsubcategory(
+        // Usar la API en lugar del servicio directo
+        const newSubSubCategory = await postAPI<Category["subCategories"][0]["subSubCategories"][0]>("categories", {
+          type: "subsubcategory",
           categoryId,
-          subCategoryId,
-          {
-            name: subSubCategory.name,
-            color: subSubCategory.color,
-          }
-        );
+          subcategoryId: subCategoryId,
+          name: subSubCategory.name,
+          color: subSubCategory.color,
+        });
+        
+        // Actualizar categorías con tipado explícito
         setCategories(
-          categories.map((c) =>
-            c.id === categoryId
-              ? {
-                  ...c,
-                  subCategories: c.subCategories.map((sc) =>
-                    sc.id === subCategoryId
-                      ? {
-                          ...sc,
-                          subSubCategories: [
-                            ...sc.subSubCategories,
-                            newSubSubCategory,
-                          ],
-                        }
-                      : sc
-                  ),
-                }
-              : c
-          )
+          categories.map((c) => {
+            if (c.id === categoryId) {
+              return {
+                ...c,
+                subCategories: c.subCategories.map((sc) => {
+                  if (sc.id === subCategoryId) {
+                    return {
+                      ...sc,
+                      subSubCategories: [
+                        ...sc.subSubCategories, 
+                        newSubSubCategory
+                      ] as Category["subCategories"][0]["subSubCategories"]
+                    };
+                  }
+                  return sc;
+                })
+              };
+            }
+            return c;
+          })
         );
       } else {
-        const newSubSubCategory = {
+        const newSubSubCategory: Category["subCategories"][0]["subSubCategories"][0] = {
           ...subSubCategory,
           id: crypto.randomUUID(),
         };
+        
         setCategories(
-          categories.map((c) =>
-            c.id === categoryId
-              ? {
-                  ...c,
-                  subCategories: c.subCategories.map((sc) =>
-                    sc.id === subCategoryId
-                      ? {
-                          ...sc,
-                          subSubCategories: [
-                            ...sc.subSubCategories,
-                            newSubSubCategory,
-                          ],
-                        }
-                      : sc
-                  ),
-                }
-              : c
-          )
+          categories.map((c) => {
+            if (c.id === categoryId) {
+              return {
+                ...c,
+                subCategories: c.subCategories.map((sc) => {
+                  if (sc.id === subCategoryId) {
+                    return {
+                      ...sc,
+                      subSubCategories: [
+                        ...sc.subSubCategories, 
+                        newSubSubCategory
+                      ]
+                    };
+                  }
+                  return sc;
+                })
+              };
+            }
+            return c;
+          })
         );
       }
     } catch (error) {
@@ -324,15 +352,15 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
   ) => {
     try {
       if (isDatabaseAvailable()) {
-        await CategoryService.updateSubsubcategory(
+        // Usar la API en lugar del servicio directo
+        await putAPI("categories", {
+          type: "subsubcategory",
           categoryId,
-          subCategoryId,
-          subSubCategoryId,
-          {
-            name: subSubCategory.name,
-            color: subSubCategory.color,
-          }
-        );
+          subcategoryId: subCategoryId,
+          id: subSubCategoryId,
+          name: subSubCategory.name,
+          color: subSubCategory.color,
+        });
       }
       setCategories(
         categories.map((c) =>
@@ -367,11 +395,13 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
   ) => {
     try {
       if (isDatabaseAvailable()) {
-        await CategoryService.deleteSubsubcategory(
+        // Usar la API en lugar del servicio directo
+        await deleteAPI("categories", {
+          type: "subsubcategory",
           categoryId,
-          subCategoryId,
-          subSubCategoryId
-        );
+          subcategoryId: subCategoryId,
+          id: subSubCategoryId
+        });
       }
       setCategories(
         categories.map((c) =>
@@ -411,7 +441,8 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
   const addBook = async (book: Omit<Book, "id">) => {
     try {
       if (isDatabaseAvailable()) {
-        const newBook = await BookService.createBook(book);
+        // Usar la API en lugar del servicio directo
+        const newBook = await postAPI<Book>("books", book);
         setBooks([...books, newBook]);
       } else {
         const newBook: Book = {
@@ -428,7 +459,8 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
   const updateBook = async (id: string, book: Partial<Book>) => {
     try {
       if (isDatabaseAvailable()) {
-        await BookService.updateBook(id, book);
+        // Usar la API en lugar del servicio directo
+        await putAPI("books", { id, ...book });
       }
       setBooks(books.map((b) => (b.id === id ? { ...b, ...book } : b)));
     } catch (error) {
@@ -439,7 +471,8 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
   const deleteBook = async (id: string) => {
     try {
       if (isDatabaseAvailable()) {
-        await BookService.deleteBook(id);
+        // Usar la API en lugar del servicio directo
+        await deleteAPI("books", { id });
       }
       setBooks(books.filter((b) => b.id !== id));
     } catch (error) {
@@ -447,12 +480,31 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const searchBooks = (query: string) => {
+  const searchBooks = async (query: string): Promise<Book[]> => {
     if (!query) return books;
-    const lowerQuery = query.toLowerCase();
-    return books.filter((book) =>
-      book.title.toLowerCase().includes(lowerQuery)
-    );
+    
+    if (isDatabaseAvailable()) {
+      try {
+        // Usar la API para buscar libros cuando la base de datos está disponible
+        const searchResults = await fetchAPI<Book[]>("books", { query });
+        return searchResults;
+      } catch (error) {
+        console.error("Error al buscar libros a través de la API:", error);
+        // Si hay un error en la API, hacer la búsqueda localmente como fallback
+        const lowerQuery = query.toLowerCase();
+        return books.filter((book) =>
+          book.title.toLowerCase().includes(lowerQuery) || 
+          book.author.toLowerCase().includes(lowerQuery)
+        );
+      }
+    } else {
+      // Cuando la base de datos no está disponible, hacer la búsqueda localmente
+      const lowerQuery = query.toLowerCase();
+      return books.filter((book) =>
+        book.title.toLowerCase().includes(lowerQuery) || 
+        book.author.toLowerCase().includes(lowerQuery)
+      );
+    }
   };
 
   const getCategory = (categoryId: string) => {
