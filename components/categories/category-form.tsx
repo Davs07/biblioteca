@@ -1,13 +1,12 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
 import { useLibrary } from "@/context/library-context"
 import { Input } from "../ui/input"
 import { Button } from "../ui/button"
 import { Label } from "../ui/label"
-import { postAPI, putAPI } from "@/lib/api"
+import type { Category, SubCategory } from "@/types" // Asegúrate de importar los tipos
 
 interface CategoryFormProps {
   type: "category" | "subCategory" | "subSubCategory"
@@ -29,8 +28,15 @@ export function CategoryForm({
   initialData,
   onComplete,
 }: CategoryFormProps) {
-  // Ya no necesitamos extraer estas funciones del contexto
-  const { } = useLibrary()
+  // Extraemos las funciones necesarias del contexto
+  const { 
+    addCategory, 
+    updateCategory, 
+    addSubCategory, 
+    updateSubCategory, 
+    addSubSubCategory, 
+    updateSubSubCategory 
+  } = useLibrary()
 
   const [name, setName] = useState(initialData?.name || "")
   const [color, setColor] = useState(initialData?.color || "#000000")
@@ -38,55 +44,49 @@ export function CategoryForm({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    const data = { name, color }
+    // Datos básicos que siempre tendremos
+    const basicData = { name, color }
     
     try {
       if (type === "category") {
         if (categoryId) {
-          // Actualizar categoría principal
-          await putAPI("categories", {
-            id: categoryId,
-            ...data
-          })
+          // Actualizar categoría principal usando el contexto
+          await updateCategory(categoryId, basicData)
         } else {
-          // Crear nueva categoría principal
-          await postAPI("categories", data)
+          // Crear nueva categoría principal usando el contexto
+          // Proporcionar subCategories vacío para cumplir con el tipo
+          const categoryData: Omit<Category, "id"> = {
+            ...basicData,
+            subCategories: []
+          }
+          await addCategory(categoryData)
         }
       } else if (type === "subCategory" && categoryId) {
         if (subCategoryId) {
-          // Actualizar subcategoría
-          await putAPI("categories", {
-            id: subCategoryId,
-            type: "subcategory",
-            categoryId,
-            ...data
-          })
+          // Actualizar subcategoría usando el contexto
+          await updateSubCategory(categoryId, subCategoryId, basicData)
         } else {
-          // Crear nueva subcategoría
-          await postAPI("categories", {
-            type: "subcategory",
-            categoryId,
-            ...data
-          })
+          // Crear nueva subcategoría usando el contexto
+          // Proporcionar subSubCategories vacío para cumplir con el tipo
+          const subCategoryData: Omit<SubCategory, "id"> = {
+            ...basicData,
+            subSubCategories: []
+          }
+          await addSubCategory(categoryId, subCategoryData)
         }
       } else if (type === "subSubCategory" && categoryId && subCategoryId) {
         if (subSubCategoryId) {
-          // Actualizar sub-subcategoría
-          await putAPI("categories", {
-            id: subSubCategoryId,
-            type: "subsubcategory",
+          // Actualizar sub-subcategoría usando el contexto
+          await updateSubSubCategory(
             categoryId,
-            subcategoryId: subCategoryId,
-            ...data
-          })
+            subCategoryId,
+            subSubCategoryId,
+            basicData
+          )
         } else {
-          // Crear nueva sub-subcategoría
-          await postAPI("categories", {
-            type: "subsubcategory",
-            categoryId,
-            subcategoryId: subCategoryId,
-            ...data
-          })
+          // Crear nueva sub-subcategoría usando el contexto
+          // Para SubSubCategory solo necesitamos name y color
+          await addSubSubCategory(categoryId, subCategoryId, basicData)
         }
       }
       
@@ -134,4 +134,3 @@ export function CategoryForm({
     </form>
   )
 }
-

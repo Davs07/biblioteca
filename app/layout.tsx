@@ -6,6 +6,7 @@ import { LibraryProvider } from "@/context/library-context";
 import { AuthProvider } from "@/context/auth-context";
 // import { ThemeProvider } from "next-themes"
 import { ThemeProvider } from "@/components/theme-provider";
+import { Toaster } from "@/components/ui/toaster";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -31,6 +32,7 @@ export default function RootLayout({
           <AuthProvider>
             <LibraryProvider>{children}</LibraryProvider>
           </AuthProvider>
+          <Toaster />
         </ThemeProvider>
       </body>
     </html>

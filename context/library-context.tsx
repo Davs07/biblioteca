@@ -8,25 +8,24 @@ import {
   type ReactNode,
 } from "react";
 import type { Book, Category } from "@/types";
-import { isDatabaseAvailable } from "../lib/db";
 import { fetchAPI, postAPI, putAPI, deleteAPI } from "@/lib/api";
 
 interface LibraryContextType {
   categories: Category[];
   books: Book[];
-  addCategory: (category: Omit<Category, "id">) => void;
-  updateCategory: (id: string, category: Partial<Category>) => void;
-  deleteCategory: (id: string) => void;
+  addCategory: (category: Omit<Category, "id">) => Promise<void>;
+  updateCategory: (id: string, category: Partial<Category>) => Promise<void>;
+  deleteCategory: (id: string) => Promise<void>;
   addSubCategory: (
     categoryId: string,
     subCategory: Omit<Category["subCategories"][0], "id">
-  ) => void;
+  ) => Promise<void>;
   updateSubCategory: (
     categoryId: string,
     subCategoryId: string,
     subCategory: Partial<Category["subCategories"][0]>
-  ) => void;
-  deleteSubCategory: (categoryId: string, subCategoryId: string) => void;
+  ) => Promise<void>;
+  deleteSubCategory: (categoryId: string, subCategoryId: string) => Promise<void>;
   addSubSubCategory: (
     categoryId: string,
     subCategoryId: string,
@@ -34,21 +33,21 @@ interface LibraryContextType {
       Category["subCategories"][0]["subSubCategories"][0],
       "id"
     >
-  ) => void;
+  ) => Promise<void>;
   updateSubSubCategory: (
     categoryId: string,
     subCategoryId: string,
     subSubCategoryId: string,
     subSubCategory: Partial<Category["subCategories"][0]["subSubCategories"][0]>
-  ) => void;
+  ) => Promise<void>;
   deleteSubSubCategory: (
     categoryId: string,
     subCategoryId: string,
     subSubCategoryId: string
-  ) => void;
-  addBook: (book: Omit<Book, "id">) => void;
-  updateBook: (id: string, book: Partial<Book>) => void;
-  deleteBook: (id: string) => void;
+  ) => Promise<void>;
+  addBook: (book: Omit<Book, "id">) => Promise<void>;
+  updateBook: (id: string, book: Partial<Book>) => Promise<void>;
+  deleteBook: (id: string) => Promise<void>;
   searchBooks: (query: string) => Promise<Book[]>;
   getCategory: (categoryId: string) => Category | undefined;
   getSubCategory: (
@@ -96,55 +95,49 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
 
   const addCategory = async (category: Omit<Category, "id">) => {
     try {
-      if (isDatabaseAvailable()) {
-        // Usar la API en lugar del servicio directo
-        const newCategory = await postAPI<Category>("categories", {
-          name: category.name,
-          color: category.color,
-        });
-        setCategories([...categories, newCategory]);
-      } else {
-        const newCategory: Category = {
-          ...category,
-          id: crypto.randomUUID(),
-          subCategories: [],
-        };
-        setCategories([...categories, newCategory]);
-      }
+      // Usar la API para agregar categoría
+      const newCategory = await postAPI<Category>("categories", {
+        name: category.name,
+        color: category.color,
+      });
+      setCategories([...categories, newCategory]);
     } catch (error) {
       console.error("Error al añadir categoría:", error);
+      throw error; // Re-lanzar el error para manejo en componentes
     }
   };
 
   const updateCategory = async (id: string, category: Partial<Category>) => {
     try {
-      if (isDatabaseAvailable()) {
-        // Usar la API en lugar del servicio directo
-        await putAPI("categories", {
-          id,
-          name: category.name,
-          color: category.color,
-        });
-      }
+      // Usar la API para actualizar categoría
+      await putAPI("categories", {
+        id,
+        name: category.name,
+        color: category.color,
+      });
+      
+      // Actualizar el estado local después de actualizar en la API
       setCategories(
         categories.map((c) => (c.id === id ? { ...c, ...category } : c))
       );
     } catch (error) {
       console.error("Error al actualizar categoría:", error);
+      throw error;
     }
   };
 
   const deleteCategory = async (id: string) => {
     try {
-      if (isDatabaseAvailable()) {
-        // Usar la API en lugar del servicio directo
-        await deleteAPI("categories", { id });
-      }
+      // Usar la API para eliminar categoría
+      await deleteAPI("categories", { id });
+      
+      // Actualizar el estado local después de eliminar en la API
       setCategories(categories.filter((c) => c.id !== id));
       // También eliminar todos los libros en esta categoría
       setBooks(books.filter((b) => b.categoryId !== id));
     } catch (error) {
       console.error("Error al eliminar categoría:", error);
+      throw error;
     }
   };
 
@@ -153,48 +146,35 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
     subCategory: Omit<Category["subCategories"][0], "id">
   ) => {
     try {
-      if (isDatabaseAvailable()) {
-        // Usar la API en lugar del servicio directo
-        const newSubCategory = await postAPI<Category["subCategories"][0]>("categories", {
+      // Usar la API para agregar subcategoría
+      const newSubCategory = await postAPI<Category["subCategories"][0]>(
+        "categories",
+        {
           type: "subcategory",
           categoryId,
           name: subCategory.name,
           color: subCategory.color,
-        });
+        }
+      );
 
-        // Actualizar categorías con tipado explícito
-        setCategories(
-          categories.map((c) => {
-            if (c.id === categoryId) {
-              return {
-                ...c,
-                subCategories: [...c.subCategories, newSubCategory] as Category["subCategories"]
-              };
-            }
-            return c;
-          })
-        );
-      } else {
-        const newSubCategory: Category["subCategories"][0] = {
-          ...subCategory,
-          id: crypto.randomUUID(),
-          subSubCategories: [],
-        };
-        
-        setCategories(
-          categories.map((c) => {
-            if (c.id === categoryId) {
-              return {
-                ...c,
-                subCategories: [...c.subCategories, newSubCategory]
-              };
-            }
-            return c;
-          })
-        );
-      }
+      // Actualizar categorías con tipado explícito
+      setCategories(
+        categories.map((c) => {
+          if (c.id === categoryId) {
+            return {
+              ...c,
+              subCategories: [
+                ...c.subCategories,
+                newSubCategory,
+              ] as Category["subCategories"],
+            };
+          }
+          return c;
+        })
+      );
     } catch (error) {
       console.error("Error al añadir subcategoría:", error);
+      throw error;
     }
   };
 
@@ -204,16 +184,16 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
     subCategory: Partial<Category["subCategories"][0]>
   ) => {
     try {
-      if (isDatabaseAvailable()) {
-        // Usar la API en lugar del servicio directo
-        await putAPI("categories", {
-          type: "subcategory",
-          categoryId,
-          id: subCategoryId,
-          name: subCategory.name,
-          color: subCategory.color,
-        });
-      }
+      // Usar la API para actualizar subcategoría
+      await putAPI("categories", {
+        type: "subcategory",
+        categoryId,
+        id: subCategoryId,
+        name: subCategory.name,
+        color: subCategory.color,
+      });
+      
+      // Actualizar el estado local después de actualizar en la API
       setCategories(
         categories.map((c) =>
           c.id === categoryId
@@ -228,6 +208,7 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
       );
     } catch (error) {
       console.error("Error al actualizar subcategoría:", error);
+      throw error;
     }
   };
 
@@ -236,14 +217,14 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
     subCategoryId: string
   ) => {
     try {
-      if (isDatabaseAvailable()) {
-        // Usar la API en lugar del servicio directo
-        await deleteAPI("categories", { 
-          type: "subcategory",
-          categoryId,
-          id: subCategoryId 
-        });
-      }
+      // Usar la API para eliminar subcategoría
+      await deleteAPI("categories", {
+        type: "subcategory",
+        categoryId,
+        id: subCategoryId,
+      });
+      
+      // Actualizar el estado local después de eliminar en la API
       setCategories(
         categories.map((c) =>
           c.id === categoryId
@@ -265,6 +246,7 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
       );
     } catch (error) {
       console.error("Error al eliminar subcategoría:", error);
+      throw error;
     }
   };
 
@@ -277,70 +259,43 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
     >
   ) => {
     try {
-      if (isDatabaseAvailable()) {
-        // Usar la API en lugar del servicio directo
-        const newSubSubCategory = await postAPI<Category["subCategories"][0]["subSubCategories"][0]>("categories", {
-          type: "subsubcategory",
-          categoryId,
-          subcategoryId: subCategoryId,
-          name: subSubCategory.name,
-          color: subSubCategory.color,
-        });
-        
-        // Actualizar categorías con tipado explícito
-        setCategories(
-          categories.map((c) => {
-            if (c.id === categoryId) {
-              return {
-                ...c,
-                subCategories: c.subCategories.map((sc) => {
-                  if (sc.id === subCategoryId) {
-                    return {
-                      ...sc,
-                      subSubCategories: [
-                        ...sc.subSubCategories, 
-                        newSubSubCategory
-                      ] as Category["subCategories"][0]["subSubCategories"]
-                    };
-                  }
-                  return sc;
-                })
-              };
-            }
-            return c;
-          })
-        );
-      } else {
-        const newSubSubCategory: Category["subCategories"][0]["subSubCategories"][0] = {
-          ...subSubCategory,
-          id: crypto.randomUUID(),
-        };
-        
-        setCategories(
-          categories.map((c) => {
-            if (c.id === categoryId) {
-              return {
-                ...c,
-                subCategories: c.subCategories.map((sc) => {
-                  if (sc.id === subCategoryId) {
-                    return {
-                      ...sc,
-                      subSubCategories: [
-                        ...sc.subSubCategories, 
-                        newSubSubCategory
-                      ]
-                    };
-                  }
-                  return sc;
-                })
-              };
-            }
-            return c;
-          })
-        );
-      }
+      // Usar la API para agregar sub-subcategoría
+      const newSubSubCategory = await postAPI<
+        Category["subCategories"][0]["subSubCategories"][0]
+      >("categories", {
+        type: "subsubcategory",
+        categoryId,
+        subcategoryId: subCategoryId,
+        name: subSubCategory.name,
+        color: subSubCategory.color,
+      });
+
+      // Actualizar categorías con tipado explícito
+      setCategories(
+        categories.map((c) => {
+          if (c.id === categoryId) {
+            return {
+              ...c,
+              subCategories: c.subCategories.map((sc) => {
+                if (sc.id === subCategoryId) {
+                  return {
+                    ...sc,
+                    subSubCategories: [
+                      ...sc.subSubCategories,
+                      newSubSubCategory,
+                    ] as Category["subCategories"][0]["subSubCategories"],
+                  };
+                }
+                return sc;
+              }),
+            };
+          }
+          return c;
+        })
+      );
     } catch (error) {
       console.error("Error al añadir sub-subcategoría:", error);
+      throw error;
     }
   };
 
@@ -351,17 +306,17 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
     subSubCategory: Partial<Category["subCategories"][0]["subSubCategories"][0]>
   ) => {
     try {
-      if (isDatabaseAvailable()) {
-        // Usar la API en lugar del servicio directo
-        await putAPI("categories", {
-          type: "subsubcategory",
-          categoryId,
-          subcategoryId: subCategoryId,
-          id: subSubCategoryId,
-          name: subSubCategory.name,
-          color: subSubCategory.color,
-        });
-      }
+      // Usar la API para actualizar sub-subcategoría
+      await putAPI("categories", {
+        type: "subsubcategory",
+        categoryId,
+        subcategoryId: subCategoryId,
+        id: subSubCategoryId,
+        name: subSubCategory.name,
+        color: subSubCategory.color,
+      });
+      
+      // Actualizar el estado local después de actualizar en la API
       setCategories(
         categories.map((c) =>
           c.id === categoryId
@@ -385,6 +340,7 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
       );
     } catch (error) {
       console.error("Error al actualizar sub-subcategoría:", error);
+      throw error;
     }
   };
 
@@ -394,15 +350,15 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
     subSubCategoryId: string
   ) => {
     try {
-      if (isDatabaseAvailable()) {
-        // Usar la API en lugar del servicio directo
-        await deleteAPI("categories", {
-          type: "subsubcategory",
-          categoryId,
-          subcategoryId: subCategoryId,
-          id: subSubCategoryId
-        });
-      }
+      // Usar la API para eliminar sub-subcategoría
+      await deleteAPI("categories", {
+        type: "subsubcategory",
+        categoryId,
+        subcategoryId: subCategoryId,
+        id: subSubCategoryId,
+      });
+      
+      // Actualizar el estado local después de eliminar en la API
       setCategories(
         categories.map((c) =>
           c.id === categoryId
@@ -435,74 +391,62 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
       );
     } catch (error) {
       console.error("Error al eliminar sub-subcategoría:", error);
+      throw error;
     }
   };
 
   const addBook = async (book: Omit<Book, "id">) => {
     try {
-      if (isDatabaseAvailable()) {
-        // Usar la API en lugar del servicio directo
-        const newBook = await postAPI<Book>("books", book);
-        setBooks([...books, newBook]);
-      } else {
-        const newBook: Book = {
-          ...book,
-          id: crypto.randomUUID(),
-        };
-        setBooks([...books, newBook]);
-      }
+      // Usar la API para agregar libro
+      const newBook = await postAPI<Book>("books", book);
+      setBooks([...books, newBook]);
     } catch (error) {
       console.error("Error al añadir libro:", error);
+      throw error;
     }
   };
 
   const updateBook = async (id: string, book: Partial<Book>) => {
     try {
-      if (isDatabaseAvailable()) {
-        // Usar la API en lugar del servicio directo
-        await putAPI("books", { id, ...book });
-      }
+      // Usar la API para actualizar libro
+      await putAPI("books", { id, ...book });
+      
+      // Actualizar el estado local después de actualizar en la API
       setBooks(books.map((b) => (b.id === id ? { ...b, ...book } : b)));
     } catch (error) {
       console.error("Error al actualizar libro:", error);
+      throw error;
     }
   };
 
   const deleteBook = async (id: string) => {
     try {
-      if (isDatabaseAvailable()) {
-        // Usar la API en lugar del servicio directo
-        await deleteAPI("books", { id });
-      }
+      // Usar la API para eliminar libro
+      await deleteAPI("books", { id });
+      
+      // Actualizar el estado local después de eliminar en la API
       setBooks(books.filter((b) => b.id !== id));
     } catch (error) {
       console.error("Error al eliminar libro:", error);
+      throw error;
     }
   };
 
   const searchBooks = async (query: string): Promise<Book[]> => {
     if (!query) return books;
-    
-    if (isDatabaseAvailable()) {
-      try {
-        // Usar la API para buscar libros cuando la base de datos está disponible
-        const searchResults = await fetchAPI<Book[]>("books", { query });
-        return searchResults;
-      } catch (error) {
-        console.error("Error al buscar libros a través de la API:", error);
-        // Si hay un error en la API, hacer la búsqueda localmente como fallback
-        const lowerQuery = query.toLowerCase();
-        return books.filter((book) =>
-          book.title.toLowerCase().includes(lowerQuery) || 
-          book.author.toLowerCase().includes(lowerQuery)
-        );
-      }
-    } else {
-      // Cuando la base de datos no está disponible, hacer la búsqueda localmente
+
+    try {
+      // Usar la API para buscar libros
+      const searchResults = await fetchAPI<Book[]>("books", { query });
+      return searchResults;
+    } catch (error) {
+      console.error("Error al buscar libros a través de la API:", error);
+      // Si hay un error en la API, hacer la búsqueda localmente como fallback
       const lowerQuery = query.toLowerCase();
-      return books.filter((book) =>
-        book.title.toLowerCase().includes(lowerQuery) || 
-        book.author.toLowerCase().includes(lowerQuery)
+      return books.filter(
+        (book) =>
+          book.title.toLowerCase().includes(lowerQuery) ||
+          book.author.toLowerCase().includes(lowerQuery)
       );
     }
   };
