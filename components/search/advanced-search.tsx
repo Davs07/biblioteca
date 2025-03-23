@@ -106,11 +106,14 @@ export function AdvancedSearch() {
               <SelectValue placeholder="Todas las categorías" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Todas las categorías</SelectItem>
+              {/* Eliminamos el SelectItem con value="" */}
               {categories.map((category) => (
                 <SelectItem key={category.id} value={category.id}>
                   <div className="flex items-center">
-                    <div className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: category.color }}></div>
+                    <div 
+                      className="w-3 h-3 rounded-full mr-2" 
+                      style={{ backgroundColor: category.color }}
+                    />
                     {category.name}
                   </div>
                 </SelectItem>
@@ -135,11 +138,15 @@ export function AdvancedSearch() {
               <SelectValue placeholder="Todas las subcategorías" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Todas las subcategorías</SelectItem>
+              {/* Cambiamos "all" por "_all" para evitar confusiones y conflictos */}
+              <SelectItem value="_all">Todas las subcategorías</SelectItem>
               {subCategories.map((subCategory) => (
                 <SelectItem key={subCategory.id} value={subCategory.id}>
                   <div className="flex items-center">
-                    <div className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: subCategory.color }}></div>
+                    <div 
+                      className="w-3 h-3 rounded-full mr-2" 
+                      style={{ backgroundColor: subCategory.color }}
+                    />
                     {subCategory.name}
                   </div>
                 </SelectItem>
@@ -152,16 +159,24 @@ export function AdvancedSearch() {
           <Label htmlFor="subSubCategory" className="mb-2 block">
             Sub-subcategoría
           </Label>
-          <Select value={subSubCategoryId} onValueChange={setSubSubCategoryId} disabled={!subCategoryId}>
+          <Select 
+            value={subSubCategoryId} 
+            onValueChange={setSubSubCategoryId} 
+            disabled={!subCategoryId || subCategoryId === "_all"}
+          >
             <SelectTrigger id="subSubCategory">
               <SelectValue placeholder="Todas las sub-subcategorías" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Todas las sub-subcategorías</SelectItem>
+              {/* Cambiamos "all" por "_all" para evitar confusiones y conflictos */}
+              <SelectItem value="_all">Todas las sub-subcategorías</SelectItem>
               {subSubCategories.map((subSubCategory) => (
                 <SelectItem key={subSubCategory.id} value={subSubCategory.id}>
                   <div className="flex items-center">
-                    <div className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: subSubCategory.color }}></div>
+                    <div 
+                      className="w-3 h-3 rounded-full mr-2" 
+                      style={{ backgroundColor: subSubCategory.color }}
+                    />
                     {subSubCategory.name}
                   </div>
                 </SelectItem>
@@ -201,4 +216,3 @@ export function AdvancedSearch() {
     </div>
   )
 }
-
