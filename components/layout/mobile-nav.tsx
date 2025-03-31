@@ -68,11 +68,11 @@ export function MobileNav({ items, setIsOpen }: MobileNavProps) {
           ))}
 
           <Link
-            href="/profile"
+            href="/dashboard/profile"
             onClick={() => setIsOpen(false)}
             className={cn(
               "flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors",
-              pathname === "/profile" ? "bg-primary text-primary-foreground" : "hover:bg-muted",
+              pathname === "/dashboard/profile" ? "bg-primary text-primary-foreground" : "hover:bg-muted",
             )}
           >
             Mi Perfil

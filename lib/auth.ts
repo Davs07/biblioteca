@@ -1,13 +1,78 @@
 import { prisma } from "./prisma"
-import { isDatabaseAvailable } from "./db"
+import { isDatabaseAvailable, handleDatabaseError } from "./db"
+import { User } from "../context/auth-context"
+
+// Función para actualizar el perfil de un usuario
+export async function updateUserProfile(userId: string, data: Partial<User>) {
+  if (isDatabaseAvailable()) {
+    try {
+      // Verificar si el usuario existe
+      const existingUser = await prisma.user.findUnique({
+        where: { id: userId },
+      })
+
+      if (!existingUser) {
+        console.error("Usuario no encontrado")
+        return null
+      }
+
+      // Actualizar el usuario en la base de datos
+      const updatedUser = await prisma.user.update({
+        where: { id: userId },
+        data: {
+          name: data.name,
+          avatarUrl: data.avatar,
+          // No actualizamos el email ni la contraseña aquí por seguridad
+          // Eso requeriría un flujo separado con verificación
+        },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          avatarUrl: true,
+        },
+      })
+
+      return {
+        id: updatedUser.id,
+        name: updatedUser.name,
+        email: updatedUser.email,
+        role: updatedUser.role as "admin" | "librarian" | "user",
+        avatar: updatedUser.avatarUrl,
+      }
+    } catch (error) {
+      console.error("Error al actualizar perfil de usuario:", error)
+      handleDatabaseError(error, 'Error updating user profile')
+      return null
+    }
+  } else {
+    // Simular actualización cuando no hay base de datos
+    return {
+      id: userId,
+      name: data.name || "",
+      email: data.email || "",
+      role: data.role || "user",
+      avatar: data.avatar || "/placeholder.svg?height=40&width=40",
+    }
+  }
+}
 
 // Función para autenticar un usuario
 export async function authenticateUser(email: string, password: string) {
   if (isDatabaseAvailable()) {
     try {
-      // Autenticar directamente con Prisma
+      // Buscar el usuario por email en la base de datos
       const user = await prisma.user.findUnique({
         where: { email },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          passwordHash: true,
+          role: true,
+          avatarUrl: true,
+        },
       })
 
       if (!user) {
@@ -18,15 +83,22 @@ export async function authenticateUser(email: string, password: string) {
       // En un entorno real, deberías verificar la contraseña con bcrypt o similar
       // Por ahora, comparamos directamente con el passwordHash
       if (user.passwordHash === password) {
-        return user
+        return {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          avatarUrl: user.avatarUrl,
+        }
       } else {
         console.error("Contraseña incorrecta")
         return null
       }
     } catch (error) {
       console.error("Error al autenticar usuario:", error)
+      handleDatabaseError(error, 'Error authenticating user')
+      return null
     }
-    return null
   } else {
     // Usar datos de demostración cuando no hay base de datos
     const demoUsers = [
@@ -71,27 +143,40 @@ export async function registerUser(name: string, email: string, password: string
       })
 
       if (existingUser) {
+        console.error("El correo electrónico ya está registrado")
         return null
       }
 
-      // Crear directamente el usuario con Prisma
-      // Ya no necesitamos Supabase Auth
-      // Crear el usuario en nuestra base de datos
+      // Crear el usuario en la base de datos
       const newUser = await prisma.user.create({
         data: {
           name,
           email,
-          passwordHash: "hashed_password", // En producción, deberías usar bcrypt o similar
+          passwordHash: password, // En producción, deberías usar bcrypt o similar para hashear
           role: "user",
           avatarUrl: "/placeholder.svg?height=40&width=40",
         },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          avatarUrl: true,
+        },
       })
 
-      return newUser
+      return {
+        id: newUser.id,
+        name: newUser.name,
+        email: newUser.email,
+        role: newUser.role,
+        avatarUrl: newUser.avatarUrl,
+      }
     } catch (error) {
       console.error("Error al registrar usuario:", error)
+      handleDatabaseError(error, 'Error registering user')
+      return null
     }
-    return null
   } else {
     // Simular registro cuando no hay base de datos
     return {

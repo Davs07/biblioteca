@@ -14,14 +14,16 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, checkSession } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
+    // Verificar si el usuario está autenticado y tiene una sesión válida
+    if (!isLoading && (!isAuthenticated || !checkSession())) {
+      // Redirigir al login si no hay sesión válida
       router.push("/auth/login");
     }
-  }, [isLoading, isAuthenticated, router]);
+  }, [isLoading, isAuthenticated, checkSession, router]);
 
   if (isLoading) {
     return (
@@ -31,7 +33,7 @@ export default function DashboardLayout({
     );
   }
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated || !checkSession()) {
     return null;
   }
 

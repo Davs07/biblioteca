@@ -16,11 +16,26 @@ import { isDatabaseAvailable } from "../../../lib/db"
 // GET: Obtener todas las categorías
 export async function GET() {
   try {
+    // Verificar si la base de datos está disponible
+    if (!isDatabaseAvailable()) {
+      console.log("Base de datos no disponible, usando datos de demostración")
+      return NextResponse.json([], { status: 200 })
+    }
+    
     const categories = await getAllCategories()
     return NextResponse.json(categories)
-  } catch (error) {
-    console.error("Error al obtener categorías:", error)
-    return NextResponse.json({ error: "Error al obtener categorías" }, { status: 500 })
+  } catch (error: any) {
+    // Mejorar los mensajes de error para facilitar la depuración
+    if (error?.message?.includes('FATAL: Tenant or user not found')) {
+      console.error("Error de autenticación con la base de datos: Verifica las credenciales en el archivo .env.local")
+      return NextResponse.json(
+        { error: "Error de autenticación con la base de datos. Verifica las credenciales." },
+        { status: 500 }
+      )
+    } else {
+      console.error("Error al obtener categorías:", error)
+      return NextResponse.json({ error: "Error al obtener categorías" }, { status: 500 })
+    }
   }
 }
 

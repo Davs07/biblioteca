@@ -1,25 +1,25 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { cn } from "../../lib/utils"
-import { Button } from "../ui/button"
-import { Sheet, SheetContent, SheetTrigger } from "../ui/sheet"
-import { BookOpen, Menu } from "lucide-react"
-import { ThemeToggle } from "@/components/layout/theme-toggle"
-import { UserNav } from "@/components/layout/user-nav"
-import { useAuth } from "@/context/auth-context"
-import { useSidebar } from "../ui/sidebar"
-import { MobileNav } from "@/components/layout/mobile-nav"
+import { useState } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { cn } from "../../lib/utils";
+import { Button } from "../ui/button";
+import { Sheet, SheetContent, SheetTrigger } from "../ui/sheet";
+import { BookOpen, Menu } from "lucide-react";
+import { ThemeToggle } from "@/components/layout/theme-toggle";
+import { UserNav } from "@/components/layout/user-nav";
+import { useAuth } from "@/context/auth-context";
+import { useSidebar } from "../ui/sidebar";
+import { MobileNav } from "@/components/layout/mobile-nav";
 
 export function MainNav() {
-  const pathname = usePathname()
-  const { isAuthenticated, user } = useAuth()
-  const { toggleSidebar } = useSidebar()
-  const [isOpen, setIsOpen] = useState(false)
+  const pathname = usePathname();
+  const { isAuthenticated, user } = useAuth();
+  const { toggleSidebar } = useSidebar();
+  const [isOpen, setIsOpen] = useState(false);
 
-  if (!isAuthenticated) return null
+  if (!isAuthenticated) return null;
 
   const navItems = [
     {
@@ -38,7 +38,7 @@ export function MainNav() {
       href: "/dashboard/search",
       label: "Búsqueda",
     },
-  ]
+  ];
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -55,7 +55,9 @@ export function MainNav() {
         <div className="hidden md:flex ">
           <Link href="/dashboard" className="flex items-center space-x-2">
             <BookOpen className="h-6 w-6" />
-            <span className="font-bold hidden sm:inline-block">BiblioSystem</span>
+            <span className="font-bold hidden sm:inline-block">
+              BiblioSystem
+            </span>
           </Link>
         </div>
 
@@ -67,9 +69,10 @@ export function MainNav() {
               href={item.href}
               className={cn(
                 "text-sm font-medium transition-colors hover:text-primary",
-                pathname === item.href ? "text-foreground" : "text-muted-foreground",
-              )}
-            >
+                pathname === item.href
+                  ? "text-foreground"
+                  : "text-muted-foreground"
+              )}>
               {item.label}
             </Link>
           ))}
@@ -97,6 +100,5 @@ export function MainNav() {
         </div>
       </div>
     </header>
-  )
+  );
 }
-

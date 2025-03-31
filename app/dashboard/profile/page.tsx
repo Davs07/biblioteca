@@ -1,13 +1,75 @@
 "use client"
 
+import { useState } from "react"
 import { useAuth } from "@/context/auth-context"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../../components/ui/card"
 import { Button } from "../../../components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "../../../components/ui/avatar"
 import { Badge } from "../../../components/ui/badge"
+import { Input } from "../../../components/ui/input"
+import { Label } from "../../../components/ui/label"
+import { useToast } from "../../../hooks/use-toast"
 
 export default function ProfilePage() {
-  const { user } = useAuth()
+  const { user, updateProfile, isLoading } = useAuth()
+  const { toast } = useToast()
+  const [isEditing, setIsEditing] = useState(false)
+  const [formData, setFormData] = useState({
+    name: "",
+  })
+
+  // Inicializar el formulario con los datos del usuario cuando se activa el modo de edición
+  const handleEdit = () => {
+    setFormData({
+      name: user?.name || "",
+    })
+    setIsEditing(true)
+  }
+
+  // Manejar cambios en los campos del formulario
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }))
+  }
+
+  // Manejar el envío del formulario
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    if (!user) return
+    
+    // Validar que el nombre no esté vacío
+    if (!formData.name.trim()) {
+      toast({
+        title: "Error",
+        description: "El nombre no puede estar vacío",
+        variant: "destructive",
+      })
+      return
+    }
+
+    // Actualizar el perfil
+    const success = await updateProfile({
+      name: formData.name,
+    })
+
+    if (success) {
+      toast({
+        title: "Perfil actualizado",
+        description: "Tu información ha sido actualizada correctamente",
+      })
+      setIsEditing(false)
+    } else {
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar tu perfil. Inténtalo de nuevo.",
+        variant: "destructive",
+      })
+    }
+  }
 
   if (!user) {
     return <div className="flex justify-center p-8">Cargando...</div>
@@ -62,25 +124,59 @@ export default function ProfilePage() {
               </div>
 
               <div className="flex-1 space-y-4">
-                <div>
-                  <h3 className="text-sm font-medium text-muted-foreground">Nombre</h3>
-                  <p className="text-lg font-medium">{user.name}</p>
-                </div>
+                {isEditing ? (
+                  // Formulario de edición
+                  <form onSubmit={handleSubmit} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="name">Nombre</Label>
+                      <Input
+                        id="name"
+                        name="name"
+                        value={formData.name}
+                        onChange={handleInputChange}
+                        placeholder="Tu nombre"
+                      />
+                    </div>
 
-                <div>
-                  <h3 className="text-sm font-medium text-muted-foreground">Correo electrónico</h3>
-                  <p className="text-lg font-medium">{user.email}</p>
-                </div>
+                    <div className="pt-2 flex space-x-2">
+                      <Button type="submit" disabled={isLoading}>
+                        {isLoading ? "Guardando..." : "Guardar cambios"}
+                      </Button>
+                      <Button type="button" variant="outline" onClick={() => setIsEditing(false)}>
+                        Cancelar
+                      </Button>
+                    </div>
+                  </form>
+                ) : (
+                  // Vista de información
+                  <>
+                    <div>
+                      <h3 className="text-sm font-medium text-muted-foreground">Nombre</h3>
+                      <p className="text-lg font-medium">{user.name}</p>
+                    </div>
 
-                <div>
-                  <h3 className="text-sm font-medium text-muted-foreground">Rol</h3>
-                  <div className="flex items-center mt-1">
-                    <Badge variant="outline" className="font-medium">
-                      <div className={`w-2 h-2 rounded-full mr-2 ${getRoleColor(user.role)}`}></div>
-                      {getRoleName(user.role)}
-                    </Badge>
-                  </div>
-                </div>
+                    <div>
+                      <h3 className="text-sm font-medium text-muted-foreground">Correo electrónico</h3>
+                      <p className="text-lg font-medium">{user.email}</p>
+                    </div>
+
+                    <div>
+                      <h3 className="text-sm font-medium text-muted-foreground">Rol</h3>
+                      <div className="flex items-center mt-1">
+                        <Badge variant="outline" className="font-medium">
+                          <div className={`w-2 h-2 rounded-full mr-2 ${getRoleColor(user.role)}`}></div>
+                          {getRoleName(user.role)}
+                        </Badge>
+                      </div>
+                    </div>
+
+                    <div className="pt-2">
+                      <Button onClick={handleEdit} variant="outline">
+                        Editar perfil
+                      </Button>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </CardContent>

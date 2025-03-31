@@ -31,12 +31,19 @@ export async function getAllCategories() {
           })),
         })),
       }))
-    } catch (error) {
-      console.error("Error al obtener categorías:", error)
-      throw error // Lanzar el error para que sea manejado por el contexto
+    } catch (error: any) {
+      // Mejorar el manejo de errores con mensajes más descriptivos
+      if (error?.message?.includes('FATAL: Tenant or user not found')) {
+        console.error("Error de autenticación con la base de datos: Verifica las credenciales en el archivo .env.local")
+      } else {
+        console.error("Error al obtener categorías:", error)
+      }
+      // Devolver un array vacío en caso de error para evitar que la aplicación se rompa
+      return []
     }
   } else {
     // Cuando la base de datos no está disponible, devolver un array vacío
+    console.log("Base de datos no disponible, usando datos de demostración")
     return []
   }
 }
