@@ -33,7 +33,7 @@ export function BookDetail({ book }: BookDetailProps) {
 
   const handleDelete = () => {
     deleteBook(book.id)
-    router.push("/books")
+    router.push("/dashboard/books")
   }
 
   return (
@@ -41,7 +41,7 @@ export function BookDetail({ book }: BookDetailProps) {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">{book.title}</h1>
         <div className="flex gap-2">
-          <Link href={`/books/${book.id}/edit`}>
+          <Link href={`/dashboard/books/${book.id}/edit`}>
             <Button>
               <Edit className="h-4 w-4 mr-2" />
               Editar

@@ -66,16 +66,16 @@ model Book {
   id                String          @id @default(uuid()) @db.Uuid
   title             String
   author            String
-  categoryId        String          @map("category_id") @db.Uuid
-  subcategoryId     String          @map("subcategory_id") @db.Uuid
-  subsubcategoryId  String          @map("subsubcategory_id") @db.Uuid
+  categoryId        String?         @map("category_id") @db.Uuid
+  subcategoryId     String?         @map("subcategory_id") @db.Uuid
+  subsubcategoryId  String?         @map("subsubcategory_id") @db.Uuid
   shelfLocation     String          @map("shelf_location")
   coverImage        String?         @map("cover_image")
   createdAt         DateTime        @default(now()) @map("created_at") @db.Timestamptz
   updatedAt         DateTime        @default(now()) @map("updated_at") @db.Timestamptz
-  category          Category        @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  subcategory       Subcategory     @relation(fields: [subcategoryId], references: [id], onDelete: Cascade)
-  subsubcategory    Subsubcategory  @relation(fields: [subsubcategoryId], references: [id], onDelete: Cascade)
+  category          Category?       @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  subcategory       Subcategory?    @relation(fields: [subcategoryId], references: [id], onDelete: SetNull)
+  subsubcategory    Subsubcategory? @relation(fields: [subsubcategoryId], references: [id], onDelete: SetNull)
 
   @@index([categoryId])
   @@index([subcategoryId])

@@ -74,13 +74,13 @@ export function BookCard({ book }: BookCardProps) {
         </div>
       </CardContent>
       <CardFooter className="flex justify-end gap-2 pt-0">
-        <Link href={`/books/${book.id}`}>
+        <Link href={`/dashboard/books/${book.id}`}>
           <Button variant="outline" size="sm">
             <Eye className="h-4 w-4 mr-1" />
             Ver
           </Button>
         </Link>
-        <Link href={`/books/${book.id}/edit`}>
+        <Link href={`/dashboard/books/${book.id}/edit`}>
           <Button variant="outline" size="sm">
             <Edit className="h-4 w-4 mr-1" />
             Editar
